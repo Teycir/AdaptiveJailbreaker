@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-attacker: #60a5fa; /* blue-400 */
+  --color-target:   #a1a1aa; /* zinc-400 */
+  --color-success:  #4ade80; /* green-400 */
+  --color-danger:   #f87171; /* red-400 */
+  --color-warn:     #facc15; /* yellow-400 */
+}
+
+/* Scrollbar styling for trace viewer */
+.trace-scroll::-webkit-scrollbar { width: 6px; }
+.trace-scroll::-webkit-scrollbar-track { background: transparent; }
+.trace-scroll::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }

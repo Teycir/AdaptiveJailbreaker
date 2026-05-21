@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "paths": {
+      "@ajar/types": ["../../packages/types/src/index.ts"],
+      "@ajar/lib": ["../../packages/lib/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

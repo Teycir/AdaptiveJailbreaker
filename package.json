@@ -1,0 +1,19 @@
+{
+  "name": "adaptive-jailbreaker",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.2.2",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "deploy:worker": "wrangler deploy",
+    "deploy:pages": "pnpm --filter web build && wrangler pages deploy apps/web/.open-next/assets"
+  },
+  "workspaces": [
+    "apps/*",
+    "workers/*",
+    "packages/*"
+  ]
+}
