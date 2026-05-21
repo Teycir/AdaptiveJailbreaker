@@ -1,1 +1,24 @@
+# IDE history
 .history
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+.wrangler/
+.turbo/
+
+# Environment
+.env
+.env.local
+.dev.vars
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
