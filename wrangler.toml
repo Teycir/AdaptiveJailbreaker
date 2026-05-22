@@ -3,15 +3,11 @@ main            = "workers/api/src/index.ts"
 compatibility_date  = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
-# ── Durable Objects ────────────────────────────────────────────────────────────
+# ── KV Namespaces ─────────────────────────────────────────────────────────────
 
-[[durable_objects.bindings]]
-name       = "EVAL_SESSION"
-class_name = "EvalSession"
-
-[[migrations]]
-tag         = "v1"
-new_sqlite_classes = ["EvalSession"]
+[[kv_namespaces]]
+binding = "SESSIONS"
+id      = "074d45fbd4a143e585749523f3e15bd0"
 
 # ── D1 ─────────────────────────────────────────────────────────────────────────
 
@@ -24,7 +20,3 @@ database_id   = "cb0e4b80-9cbd-4f9d-975d-728d9b0e171c"
 
 [vars]
 API_WORKER_URL = "https://ajar-api.teycircoder10.workers.dev"
-
-# ── Secrets (set via wrangler CLI before first deploy) ────────────────────────
-# API_INTERNAL_SECRET — shared secret for /internal/results DO→Worker calls
-#   wrangler secret put API_INTERNAL_SECRET

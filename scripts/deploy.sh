@@ -1,39 +1,39 @@
 #!/bin/bash
-set -e
 
-echo "🚀 AJAR API Deployment"
-echo "======================"
+echo "🚀 Deploying AJAR to Cloudflare..."
 
-# Load .env if present (supports running standalone)
-if [ -f ".env" ]; then
-  set -a; source .env; set +a
-fi
+# Use Node 22
+source ~/.nvm/nvm.sh
+nvm use 22
 
-# Create D1 database if it doesn't exist
-echo "🗄️  Ensuring D1 database exists..."
-if npx wrangler d1 info ajar-db &>/dev/null; then
-  echo "✓ D1 database exists"
+# Deploy worker with retry
+echo "📦 Deploying API Worker..."
+MAX_RETRIES=3
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if pnpm deploy:worker; then
+    echo "✅ Worker deployed successfully!"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+      echo "⚠️  Retry $RETRY_COUNT/$MAX_RETRIES in 10s..."
+      sleep 10
+    else
+      echo "❌ Worker deployment failed after $MAX_RETRIES attempts"
+      exit 1
+    fi
+  fi
+done
+
+# Deploy pages
+echo "🌐 Deploying Pages..."
+if pnpm --filter web build && pnpm wrangler pages deploy apps/web/out --project-name=adaptivejailbreaker --branch=main --commit-dirty=true; then
+  echo "✅ Pages deployed successfully!"
 else
-  echo "Creating D1 database..."
-  npx wrangler d1 create ajar-db
-  echo "✓ D1 database created"
+  echo "❌ Pages deployment failed"
+  exit 1
 fi
 
-# Apply D1 migrations (--migrations-dir is the correct flag, not wrangler.toml field)
-echo "🗄️  Applying D1 migrations..."
-npx wrangler d1 migrations apply ajar-db --remote --migrations-dir migrations
-echo "✓ D1 migrations applied"
-
-# Push OPENROUTER_API_KEY as a Wrangler secret if set in env
-if [ -n "$OPENROUTER_API_KEY" ]; then
-  echo "🔑 Pushing OPENROUTER_API_KEY secret..."
-  echo "$OPENROUTER_API_KEY" | npx wrangler secret put OPENROUTER_API_KEY
-  echo "✓ OPENROUTER_API_KEY set"
-fi
-
-# Deploy API Worker
-echo "🔧 Deploying API Worker..."
-npx wrangler deploy
-
-echo ""
-echo "✅ API deployed: $API_WORKER_URL"
+echo "✅ Deployment complete!"

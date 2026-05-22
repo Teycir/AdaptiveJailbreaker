@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🌐 AJAR Frontend Deployment"
+echo "🌐 Adaptive Jailbreaker Frontend Deployment"
 echo "============================"
 
 # Load .env if present (supports running standalone)
@@ -19,8 +19,9 @@ echo "📡 API URL: $NEXT_PUBLIC_API_URL"
 # Build the frontend (NEXT_PUBLIC_API_URL is embedded at build time)
 echo "📦 Building frontend..."
 cd apps/web
-NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" \
-  $HOME/.nvm/versions/node/v20.20.0/bin/pnpm build
+source $HOME/.nvm/nvm.sh
+nvm use 22.22.3
+NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" pnpm build
 cd ../..
 
 # Deploy to Cloudflare Pages

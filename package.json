@@ -9,7 +9,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "deploy:worker": "wrangler deploy",
-    "deploy:pages": "pnpm --filter web build && wrangler pages deploy apps/web/.open-next/assets"
+    "deploy:pages": "pnpm --filter web build && wrangler pages deploy apps/web/out --project-name=adaptivejailbreaker --branch=main --commit-dirty=true"
   },
   "workspaces": [
     "apps/*",

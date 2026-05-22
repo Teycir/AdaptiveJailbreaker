@@ -58,15 +58,6 @@ function BackgroundBeams() {
   );
 }
 
-function FloatingIcons() {
-  const icons = ["⚔", "🛡", "🔬", "⚡", "🔴", "💀", "🧬", "🔒"];
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-      {icons.map((icon, i) => <span key={i} className="absolute text-2xl floating-icon" style={{ left: `${(i % 4) * 25 + 5}%`, top: `${Math.floor(i / 4) * 48 + 10}%`, animationDelay: `${i * 2.1}s`, animationDuration: `${20 + (i % 3) * 6}s` }}>{icon}</span>)}
-    </div>
-  );
-}
-
 function TextScramble({ children, className = "", duration = 1.5 }: { children: string; className?: string; duration?: number }) {
   const CHARS = "!@#$%^&*()_+{}|:<>?0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const [display, setDisplay] = useState("");
@@ -277,14 +268,13 @@ export default function Home() {
   return (
     <>
       <ThreeBackground />
-      <FloatingIcons />
       <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} apiKey={apiKey} onSaveKey={saveKey} onClearKey={clearKey} apiUrl={apiUrl} onSaveApiUrl={saveApiUrl} />
       <div className="relative z-10 min-h-screen">
         <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/30 border-b border-neon-red/10">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-neon-red/10 border border-neon-red/30 rounded flex items-center justify-center text-neon-red font-bold">A</div>
-              <span className="text-xl font-bold text-white">AJAR</span>
+              <span className="text-xl font-bold text-white">Adaptive Jailbreaker</span>
             </div>
             <div className="flex items-center gap-6">
               <a href="#how" className="text-sm text-zinc-400 hover:text-neon-red transition">How It Works</a>
@@ -298,9 +288,9 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="relative inline-block mb-6">
               <BackgroundBeams />
-              <h1 className="text-6xl font-black text-white mb-2 relative z-10"><TextScramble duration={2}>AJAR</TextScramble></h1>
+              <h1 className="text-6xl font-black text-white mb-2 relative z-10"><TextScramble duration={2}>Adaptive Jailbreaker</TextScramble></h1>
             </div>
-            <AnimatedTagline text="Adaptive Jailbreak Auditor & Red-teamer" />
+            <AnimatedTagline text="Adaptive Jailbreaker — Automated AI Red-Teaming" />
             <p className="text-zinc-400 text-lg mt-6 max-w-2xl mx-auto">Automated multi-turn adversarial probing for AI safety research. <TypingText phrases={["Crescendo escalation", "ActorAttack personas", "X-Teaming strategies"]} /></p>
             {!apiKey && <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-red-900/20 border border-red-500/30 rounded-lg text-red-400 text-sm"><span>⚠</span><span>No API key set — open admin panel to configure</span></div>}
           </div>
@@ -343,14 +333,19 @@ export default function Home() {
         </section>
 
         <footer className="py-12 px-6 border-t border-neon-red/10 bg-black/30">
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-neon-red/10 border border-neon-red/30 rounded flex items-center justify-center text-neon-red font-bold">A</div>
-              <span className="text-xl font-bold text-white">AJAR</span>
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neon-red/50 font-mono px-2">
+            <div className="flex items-center gap-2 flex-wrap justify-center text-center">
+              <span className="text-neon-red/70 flex items-center gap-1 flex-wrap justify-center">
+                Built by <a href="https://teycirbensoltane.tn" target="_blank" rel="noopener noreferrer" className="hover:text-neon-red transition-colors underline">Teycir Ben Soltane</a>
+              </span>
+              <span className="hidden sm:inline">•</span>
+              <a href="https://github.com/teycir/AdaptiveJailbreaker" target="_blank" rel="noopener noreferrer" className="hover:text-neon-red transition-colors">GitHub</a>
+              <span>•</span>
+              <a href="#how" className="hover:text-neon-red transition-colors">How It Works</a>
+              <span>•</span>
+              <a href="#faq" className="hover:text-neon-red transition-colors">FAQ</a>
             </div>
-            <p className="text-zinc-500 text-sm mb-4">Adaptive Jailbreak Auditor & Red-teamer — TypeScript Edition</p>
-            <p className="text-zinc-600 text-xs">Built by Teycir Ben Soltane • Inspired by <a href="https://github.com/douyipu/ajar" target="_blank" rel="noopener" className="text-neon-red hover:underline">AJAR Research</a></p>
-            <p className="text-zinc-700 text-xs mt-2">Business Source License 1.1 • Authorized security research only</p>
+            <div className="text-neon-red/50">Adaptive Jailbreaker • Authorized Research Only</div>
           </div>
         </footer>
       </div>
