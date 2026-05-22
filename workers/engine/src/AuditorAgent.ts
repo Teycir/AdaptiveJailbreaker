@@ -49,6 +49,7 @@ export class AuditorAgent {
     // ── Phase 1: Initialize ─────────────────────────────────────────────────
     const initResult = await this.algorithm.initialize(state, apiKey);
     if (!initResult.ok) {
+      console.error("[AuditorAgent] initialize() failed:", initResult.error);
       state = setStatus(state, "failed");
       await this.emit({ type: "status_change", status: "failed", message: initResult.error.message });
       return state;
