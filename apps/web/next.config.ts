@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  serverExternalPackages: [],
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
