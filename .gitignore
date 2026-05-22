@@ -22,3 +22,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Secrets backup
+.env.backup
+apps/web/out

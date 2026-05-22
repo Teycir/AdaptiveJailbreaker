@@ -87,8 +87,6 @@ ajar-ts/
 | **Workers** | Hono API router | 100k req/day |
 | **Durable Objects** | One DO per eval session (stateful engine) | 1M req/day |
 | **D1** | Eval results, run metadata, scores | 5M rows, 5GB |
-| **R2** | Full conversation transcripts (JSONL) | 10GB, free egress |
-| **Queues** | Job dispatch from Worker to DO | 1M msg/month |
 
 ### Why Durable Objects for the engine
 

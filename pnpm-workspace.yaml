@@ -1,0 +1,8 @@
+packages:
+  - 'apps/*'
+  - 'workers/*'
+  - 'packages/*'
+allowBuilds:
+  esbuild: false
+  sharp: false
+  workerd: false

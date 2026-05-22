@@ -8,38 +8,23 @@ compatibility_flags = ["nodejs_compat"]
 [[durable_objects.bindings]]
 name       = "EVAL_SESSION"
 class_name = "EvalSession"
-# The DO is defined in the same bundle (re-exported from workers/engine)
 
 [[migrations]]
 tag         = "v1"
-new_classes = ["EvalSession"]
+new_sqlite_classes = ["EvalSession"]
 
 # ── D1 ─────────────────────────────────────────────────────────────────────────
 
 [[d1_databases]]
 binding       = "DB"
 database_name = "ajar-db"
-database_id   = "REPLACE_WITH_YOUR_D1_ID"
-
-# ── R2 ─────────────────────────────────────────────────────────────────────────
-
-[[r2_buckets]]
-binding     = "TRANSCRIPTS"
-bucket_name = "ajar-transcripts"
+database_id   = "cb0e4b80-9cbd-4f9d-975d-728d9b0e171c"
 
 # ── Vars ───────────────────────────────────────────────────────────────────────
-# Fix #2: API_WORKER_URL must be set so EvalSession.persistToD1 can reach the
-# API worker. Without this env.API_WORKER_URL is undefined and D1 persistence
-# silently fails — no completed eval ever appears in the Results page.
-# Replace the placeholder with your actual subdomain before deploying.
 
 [vars]
-API_WORKER_URL = "https://ajar-api.<your-subdomain>.workers.dev"
+API_WORKER_URL = "https://ajar-api.teycircoder10.workers.dev"
 
 # ── Secrets (set via wrangler CLI before first deploy) ────────────────────────
 # API_INTERNAL_SECRET — shared secret for /internal/results DO→Worker calls
 #   wrangler secret put API_INTERNAL_SECRET
-
-# ── Pages (deployed separately via `wrangler pages deploy`) ───────────────────
-# Project name: ajar-web
-# Build output: apps/web/.open-next/assets  (OpenNext for CF Pages)

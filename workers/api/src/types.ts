@@ -3,7 +3,6 @@
 
 export interface Env {
   DB: D1Database;
-  TRANSCRIPTS: R2Bucket;
   EVAL_SESSION: DurableObjectNamespace;
   /** Shared secret between the API worker and the DO for /internal/results */
   API_INTERNAL_SECRET: string;

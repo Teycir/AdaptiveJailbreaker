@@ -5,7 +5,6 @@ import { AuditorAgent } from "./AuditorAgent.ts";
 
 export interface Env {
   DB: D1Database;
-  TRANSCRIPTS: R2Bucket;
   EVAL_SESSION: DurableObjectNamespace;
   /** Shared secret used to authenticate DO → Worker /internal/results calls */
   API_INTERNAL_SECRET: string;
@@ -32,7 +31,6 @@ export class EvalSession implements DurableObject {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    // WebSocket upgrade — browser TraceViewer connects here
     if (request.headers.get("Upgrade") === "websocket") {
       return this.handleWebSocket();
     }
@@ -53,7 +51,6 @@ export class EvalSession implements DurableObject {
   // ── WebSocket ─────────────────────────────────────────────────────────────
 
   private handleWebSocket(): Response {
-    // Use index destructuring — Object.values() order on CF WebSocketPair is not guaranteed.
     const { 0: client, 1: server } = new WebSocketPair();
     server.accept();
     this.connections.add(server);
@@ -61,13 +58,11 @@ export class EvalSession implements DurableObject {
     server.addEventListener("close", () => this.connections.delete(server));
     server.addEventListener("error", () => this.connections.delete(server));
 
-    // Send a snapshot immediately so late-joining clients can reconstruct state.
     if (this.evalState) {
       try {
         const snap: TraceEvent = { type: "snapshot", state: this.evalState };
         server.send(JSON.stringify(snap));
       } catch {
-        // Client already gone — remove it
         this.connections.delete(server);
       }
     }
@@ -88,7 +83,6 @@ export class EvalSession implements DurableObject {
     const body: { config: EvalConfig; apiKey: string } = await request.json();
     this.running = true;
 
-    // Fire-and-forget — DO stays alive while the loop runs
     this.runEval(body.config, body.apiKey).catch((err: unknown) => {
       this.broadcast({ type: "status_change", status: "failed", message: String(err) });
     });
@@ -112,10 +106,7 @@ export class EvalSession implements DurableObject {
       this.running = false;
     }
 
-    // Persist to DO storage (survives DO eviction for status queries)
     await this.storage.put("finalState", JSON.stringify(this.evalState));
-
-    // Persist to D1 via Worker callback so results appear in the dashboard
     await this.persistToD1(this.evalState);
   }
 
@@ -136,7 +127,6 @@ export class EvalSession implements DurableObject {
         console.error(`[EvalSession] D1 persist failed: ${res.status} ${await res.text()}`);
       }
     } catch (err) {
-      // Non-fatal: eval already succeeded, just log the persistence failure
       console.error("[EvalSession] D1 persist error:", err);
     }
   }
