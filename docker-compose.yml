@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ajar-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    # Uncomment for GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  api:
+    build:
+      context: .
+      dockerfile: workers/api/Dockerfile
+    container_name: ajar-api
+    ports:
+      - "8787:8787"
+    environment:
+      - OLLAMA_BASE=http://ollama:11434
+      - INTERNAL_SECRET=${INTERNAL_SECRET:-change-me-in-production}
+      - NODE_ENV=production
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama-data:

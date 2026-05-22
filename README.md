@@ -23,6 +23,10 @@ ajar-ts/
 
 ## 🚀 Quick Start
 
+### Mode 1: Cloudflare Workers (Serverless)
+
+Use OpenRouter API for cloud models (free tier):
+
 ```bash
 # Install dependencies
 pnpm install
@@ -31,8 +35,24 @@ pnpm install
 pnpm dev
 
 # Deploy to Cloudflare
-pnpm deploy
+cd workers/api && wrangler deploy
 ```
+
+### Mode 2: Docker (Self-Hosted)
+
+Run with local Ollama models:
+
+```bash
+# Start services
+docker-compose up -d
+
+# Pull a model
+docker exec -it ajar-ollama ollama pull gemma2:2b
+
+# API ready at http://localhost:8787
+```
+
+See [docs/Docker.md](docs/Docker.md) for full Docker setup.
 
 ## 📚 Documentation
 
