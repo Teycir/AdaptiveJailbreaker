@@ -26,3 +26,4 @@ Thumbs.db
 # Secrets backup
 .env.backup
 apps/web/outworkers/api/tests/.env.test
+workers/api/tests/.env.test
