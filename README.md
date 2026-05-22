@@ -43,7 +43,7 @@ See [docs/Specs.md](docs/Specs.md) for the full technical specification.
 - **Zero installation** - Visit URL, paste OpenRouter key, run
 - **Three core algorithms** - Crescendo, ActorAttack, X-Teaming
 - **Live streaming** - Real-time eval traces via SSE
-- **Cloudflare native** - Pages + Workers + Durable Objects + D1
+- **Cloudflare native** - Pages + Workers + KV + D1 (100% free tier)
 
 ## 📄 License
 

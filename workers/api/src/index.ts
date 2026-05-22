@@ -42,6 +42,3 @@ app.onError((err, c) => {
 });
 
 export default app;
-
-// Re-export DO so wrangler can bind it
-export { EvalSession } from "../../engine/src/index.ts";

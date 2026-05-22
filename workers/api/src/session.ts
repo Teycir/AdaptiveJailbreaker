@@ -1,12 +1,5 @@
-// Session state management using KV (free tier alternative to Durable Objects)
-
-import type { EvalConfig, EvalState, TraceEvent } from "@ajar/types";
-
-export interface Env {
-  DB: D1Database;
-  SESSIONS: KVNamespace;
-  API_INTERNAL_SECRET: string;
-}
+import type { EvalState, TraceEvent } from "@ajar/types";
+import type { Env } from "./types.ts";
 
 export class SessionManager {
   constructor(private env: Env) {}
@@ -18,7 +11,7 @@ export class SessionManager {
 
   async setState(sessionId: string, state: EvalState): Promise<void> {
     await this.env.SESSIONS.put(`session:${sessionId}`, JSON.stringify(state), {
-      expirationTtl: 3600, // 1 hour
+      expirationTtl: 3600,
     });
   }
 

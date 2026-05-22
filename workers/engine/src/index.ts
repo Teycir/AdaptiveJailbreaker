@@ -3,3 +3,4 @@
 
 export { EvalSession } from "./EvalSession.ts";
 export type { Env } from "./EvalSession.ts";
+export { AuditorAgent } from "./AuditorAgent.ts";

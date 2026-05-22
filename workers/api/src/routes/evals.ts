@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import type { EvalConfig, Algorithm } from "@ajar/types";
 import { validateKey } from "../middleware/keyValidation.ts";
 import type { Env } from "../types.ts";
+import { runEval } from "../engine/runner.ts";
 
 export const evalsRouter = new Hono<{ Bindings: Env; Variables: { apiKey: string } }>();
 
@@ -45,20 +46,24 @@ evalsRouter.post("/", validateKey, async (c) => {
     successThreshold: body.successThreshold ?? 0.85,
   };
 
-  // Route to the Durable Object for this eval ID
-  const doId = c.env.EVAL_SESSION.idFromName(config.id);
-  const stub = c.env.EVAL_SESSION.get(doId);
-
-  const startRes = await stub.fetch("https://do/start", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ config, apiKey }),
+  // Store initial state in KV
+  const initialState = {
+    runId: config.id,
+    config,
+    branches: [],
+    currentBranchId: 0,
+    totalTurns: 0,
+    totalRollbacks: 0,
+    status: "running" as const,
+    successTurn: null,
+  };
+  
+  await c.env.SESSIONS.put(`session:${config.id}`, JSON.stringify(initialState), {
+    expirationTtl: 3600,
   });
 
-  if (!startRes.ok) {
-    const err = await startRes.json<{ error?: string }>();
-    return c.json({ error: err.error ?? "Failed to start eval" }, 500);
-  }
+  // Launch eval in background — does not block the HTTP response
+  c.executionCtx.waitUntil(runEval(config.id, c.env));
 
   return c.json({ evalId: config.id }, 201);
 });
@@ -67,10 +72,11 @@ evalsRouter.post("/", validateKey, async (c) => {
 
 evalsRouter.get("/:id", async (c) => {
   const evalId = c.req.param("id");
-  const doId = c.env.EVAL_SESSION.idFromName(evalId);
-  const stub = c.env.EVAL_SESSION.get(doId);
-
-  const statusRes = await stub.fetch("https://do/status");
-  const state = await statusRes.json();
-  return c.json(state);
+  const data = await c.env.SESSIONS.get(`session:${evalId}`);
+  
+  if (!data) {
+    return c.json({ error: "eval not found" }, 404);
+  }
+  
+  return c.json(JSON.parse(data));
 });

@@ -9,6 +9,12 @@ compatibility_flags = ["nodejs_compat"]
 binding = "SESSIONS"
 id      = "074d45fbd4a143e585749523f3e15bd0"
 
+# ── Durable Objects Migration ─────────────────────────────────────────────────
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["EvalSession"]
+
 # ── D1 ─────────────────────────────────────────────────────────────────────────
 
 [[d1_databases]]
