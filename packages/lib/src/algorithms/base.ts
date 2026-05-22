@@ -2,6 +2,15 @@ import type { EvalState, Message } from "@ajar/types";
 import type { Result } from "../result/index.ts";
 
 /**
+ * Strip markdown JSON fences that some local models (e.g. gemma4) wrap around
+ * their output even when instructed to return raw JSON.
+ * Handles:  ```json\n{...}\n```  and  ```\n{...}\n```
+ */
+export function stripJsonFences(raw: string): string {
+  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+}
+
+/**
  * IAttackAlgorithm — every algorithm implements this interface.
  * The AuditorAgent calls these methods and never needs to know
  * which algorithm is running.

@@ -31,6 +31,8 @@ export type LLMRequest = {
   temperature?: number;
   maxTokens?: number;
   tools?: ToolDefinition[];
+  /** When true, passes format:"json" to Ollama so the model is forced to emit a JSON body */
+  jsonMode?: boolean;
 };
 
 export type LLMResponse = {

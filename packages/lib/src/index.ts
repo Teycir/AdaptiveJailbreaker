@@ -3,6 +3,7 @@
 
 export * from "./result/index.ts";
 export * from "./llm/index.ts";
+export * from "./llm/local.ts";
 export * from "./scoring/index.ts";
 export * from "./state/index.ts";
 export * from "./honeypot/index.ts";

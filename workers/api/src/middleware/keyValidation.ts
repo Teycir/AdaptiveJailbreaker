@@ -1,20 +1,26 @@
-// Key-format middleware — rejects obviously invalid OpenRouter keys early.
+// Key-format middleware — accepts OpenRouter keys OR local Ollama mode.
 // OpenRouter keys start with "sk-or-v1-".
+// Ollama mode is indicated by the sentinel value "ollama" (no key required).
 
 import type { MiddlewareHandler } from "hono";
 
 const OR_KEY_RE = /^sk-or-v1-[A-Za-z0-9_-]{32,}$/;
+const OLLAMA_SENTINEL = "ollama";
 
 /**
  * Validates the x-openrouter-key header.
- * Must be present and match the expected OpenRouter key format.
+ * Accepts either a valid OpenRouter key OR the sentinel "ollama" for local mode.
  */
 export const validateKey: MiddlewareHandler = async (c, next) => {
-  const key = c.req.header("x-openrouter-key");
+  const key = c.req.header("x-openrouter-key") ?? "";
 
-  if (!key || !OR_KEY_RE.test(key)) {
+  if (key !== OLLAMA_SENTINEL && !OR_KEY_RE.test(key)) {
     return c.json(
-      { error: "Missing or invalid OpenRouter API key. Supply a valid key in the x-openrouter-key header." },
+      {
+        error:
+          'Missing or invalid key. Supply a valid OpenRouter key (sk-or-v1-…) ' +
+          'or "ollama" in the x-openrouter-key header to use a local Ollama model.',
+      },
       401,
     );
   }
