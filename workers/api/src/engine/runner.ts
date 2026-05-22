@@ -78,6 +78,8 @@ export async function runEval(
   env: Env,
 ): Promise<void> {
   const kv = env.SESSIONS;
+  
+  try {
 
   // Load config from the session we just stored in POST /evals
   const raw = await kv.get(`session:${evalId}`);
@@ -86,11 +88,13 @@ export async function runEval(
     return;
   }
 
-  const session = JSON.parse(raw) as { config: import("@ajar/types").EvalConfig };
+  const session = JSON.parse(raw) as { config: import("@ajar/types").EvalConfig; apiKey?: string };
   const { config } = session;
 
-  // Get the API key from the env secret
-  const apiKey = env.OPENROUTER_KEY;
+  // Prefer the key the caller supplied (stored in KV by POST /evals).
+  // Fall back to the OPENROUTER_KEY env secret so local/CI runs still work
+  // when a server-side key is configured.
+  const apiKey = session.apiKey ?? env.OPENROUTER_KEY;
   if (!apiKey) {
     await patchSession(kv, evalId, { status: "failed" });
     await appendEvent(kv, evalId, {
@@ -134,5 +138,18 @@ export async function runEval(
       status: "failed",
       message: err instanceof Error ? err.message : String(err),
     } as TraceEvent);
+  }
+  } catch (outerErr) {
+    console.error(`[runner] fatal error in eval ${evalId}:`, outerErr);
+    try {
+      await patchSession(kv, evalId, { status: "failed" });
+      await appendEvent(kv, evalId, {
+        type: "status_change",
+        status: "failed",
+        message: outerErr instanceof Error ? outerErr.message : String(outerErr),
+      } as TraceEvent);
+    } catch (e) {
+      console.error(`[runner] failed to write error event:`, e);
+    }
   }
 }

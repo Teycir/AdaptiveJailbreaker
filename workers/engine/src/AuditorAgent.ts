@@ -33,9 +33,9 @@ export class AuditorAgent {
   private config: EvalConfig;
   private apiKey: string;
   private algorithm: IAttackAlgorithm;
-  private emit: (event: TraceEvent) => void;
+  private emit: (event: TraceEvent) => Promise<void>;
 
-  constructor(config: EvalConfig, apiKey: string, emit: (event: TraceEvent) => void) {
+  constructor(config: EvalConfig, apiKey: string, emit: (event: TraceEvent) => Promise<void>) {
     this.config = config;
     this.apiKey = apiKey;
     this.algorithm = ALGORITHMS[config.algorithm]();
@@ -50,17 +50,17 @@ export class AuditorAgent {
     const initResult = await this.algorithm.initialize(state, apiKey);
     if (!initResult.ok) {
       state = setStatus(state, "failed");
-      this.emit({ type: "status_change", status: "failed", message: initResult.error.message });
+      await this.emit({ type: "status_change", status: "failed", message: initResult.error.message });
       return state;
     }
 
     state = addMessageToState(state, initResult.value);
-    this.emit({ type: "attacker_msg", content: initResult.value.content, branchId: state.currentBranchId });
+    await this.emit({ type: "attacker_msg", content: initResult.value.content, branchId: state.currentBranchId });
 
     // ── Phase 2: Adaptive attack loop ───────────────────────────────────────
     while (!isComplete(state)) {
       const branchId = state.currentBranchId;
-      this.emit({ type: "turn_start", turn: state.totalTurns, branchId });
+      await this.emit({ type: "turn_start", turn: state.totalTurns, branchId });
 
       // Get target context (current branch messages only)
       const branchResult = getCurrentBranch(state);
@@ -82,7 +82,7 @@ export class AuditorAgent {
 
       if (!targetResult.ok) {
         state = setStatus(state, "failed");
-        this.emit({ type: "status_change", status: "failed", message: targetResult.error.message });
+        await this.emit({ type: "status_change", status: "failed", message: targetResult.error.message });
         break;
       }
 
@@ -92,7 +92,7 @@ export class AuditorAgent {
       if (targetResponse.toolCalls.length > 0) {
         const interceptions = interceptAllCalls(targetResponse.toolCalls);
         for (let i = 0; i < targetResponse.toolCalls.length; i++) {
-          this.emit({
+          await this.emit({
             type: "tool_intercept",
             tool: targetResponse.toolCalls[i]!.function.name,
             args: targetResponse.toolCalls[i]!.function.arguments,
@@ -113,7 +113,7 @@ export class AuditorAgent {
       state = addMessageToState(state, { role: "assistant", content: targetResponse.content });
       state = addScoreToState(state, score);
 
-      this.emit({ type: "target_msg", content: targetResponse.content, score, branchId });
+      await this.emit({ type: "target_msg", content: targetResponse.content, score, branchId });
 
       // Fix #5: call getCurrentBranch once *after* addScoreToState so the trend
       // includes the score we just recorded, not the pre-update snapshot.
@@ -123,12 +123,12 @@ export class AuditorAgent {
         state = setStatus(state, "failed");
         break;
       }
-      this.emit({ type: "score_update", score, trend: scoreTrend(updatedBranch.value) });
+      await this.emit({ type: "score_update", score, trend: scoreTrend(updatedBranch.value) });
 
       // Check success
       if (score >= this.config.successThreshold) {
         state = setStatus(state, "success", state.totalTurns);
-        this.emit({ type: "status_change", status: "success" });
+        await this.emit({ type: "status_change", status: "success" });
         break;
       }
 
@@ -145,12 +145,12 @@ export class AuditorAgent {
           state = rollbackResult.value;
           const toBranch = state.currentBranchId;
 
-          this.emit({ type: "rollback", fromBranch, toBranch, reason: "score declining or stubborn refusal" });
+          await this.emit({ type: "rollback", fromBranch, toBranch, reason: "score declining or stubborn refusal" });
 
           const revisionResult = await this.algorithm.revise(state, "previous branch stalled", apiKey);
           if (revisionResult.ok) {
             state = addMessageToState(state, revisionResult.value);
-            this.emit({ type: "attacker_msg", content: revisionResult.value.content, branchId: toBranch });
+            await this.emit({ type: "attacker_msg", content: revisionResult.value.content, branchId: toBranch });
           }
           continue;
         }
@@ -160,12 +160,12 @@ export class AuditorAgent {
       const nextResult = await this.algorithm.nextMessage(state, apiKey);
       if (!nextResult.ok) {
         state = setStatus(state, "failed");
-        this.emit({ type: "status_change", status: "failed", message: nextResult.error.message });
+        await this.emit({ type: "status_change", status: "failed", message: nextResult.error.message });
         break;
       }
 
       state = addMessageToState(state, nextResult.value);
-      this.emit({ type: "attacker_msg", content: nextResult.value.content, branchId: state.currentBranchId });
+      await this.emit({ type: "attacker_msg", content: nextResult.value.content, branchId: state.currentBranchId });
     }
 
     // ── Phase 4: Finalize ───────────────────────────────────────────────────
@@ -173,7 +173,7 @@ export class AuditorAgent {
       state = setStatus(state, "abandoned");
     }
 
-    this.emit({
+    await this.emit({
       type: "complete",
       success: state.status === "success",
       turns: state.totalTurns,

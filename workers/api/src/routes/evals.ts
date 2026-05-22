@@ -46,10 +46,13 @@ evalsRouter.post("/", validateKey, async (c) => {
     successThreshold: body.successThreshold ?? 0.85,
   };
 
-  // Store initial state in KV
+  // Store initial state in KV.
+  // apiKey is stored here so the background runner can use the caller's key
+  // rather than relying on the OPENROUTER_KEY env secret being set.
   const initialState = {
     runId: config.id,
     config,
+    apiKey,          // ← persisted so runner.ts can read it
     branches: [],
     currentBranchId: 0,
     totalTurns: 0,
