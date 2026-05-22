@@ -48,10 +48,10 @@ else
     "sk-or-v1-placeholder3"
   )
 fi
-# Use working keys (7, 11, 12)
+# Use working key (7 only)
 KEY1="${KEYS[6]}"
-KEY2="${KEYS[10]}"
-KEY3="${KEYS[11]}"
+KEY2="${KEYS[6]}"
+KEY3="${KEYS[6]}"
 
 # ── Colour helpers ────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
