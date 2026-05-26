@@ -88,19 +88,15 @@ export async function runEval(
     return;
   }
 
-  const session = JSON.parse(raw) as { config: import("@ajar/types").EvalConfig; apiKey?: string };
-  const { config } = session;
+  const session = JSON.parse(raw) as { config: import("@ajar/types").EvalConfig; apiKey: string };
+  const { config, apiKey } = session;
 
-  // Prefer the key the caller supplied (stored in KV by POST /evals).
-  // Fall back to the OPENROUTER_KEY env secret so local/CI runs still work
-  // when a server-side key is configured.
-  const apiKey = session.apiKey ?? env.OPENROUTER_KEY;
   if (!apiKey) {
     await patchSession(kv, evalId, { status: "failed" });
     await appendEvent(kv, evalId, {
       type: "status_change",
       status: "failed",
-      message: "OPENROUTER_KEY secret is not configured",
+      message: "No API key in session — check GEMINI_API_KEYS secret",
     } as TraceEvent);
     return;
   }

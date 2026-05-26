@@ -2,7 +2,7 @@
 
 **Project:** AdaptiveJailbreaker 
 **Target platform:** Cloudflare (Pages + Workers + Durable Objects + D1 + R2 + Queues)  
-**LLM access:** OpenRouter — user-supplied API key, stored in browser only  
+**LLM access:** Gemini — server-side key pool (`GEMINI_API_KEYS` wrangler secret); optional local Ollama  
 **Auth:** None — key-less, open access  
 **License:** MIT (inherits from original)
 
@@ -34,7 +34,7 @@ ajar-ts/
 │       │   ├── results/page.tsx    # Results dashboard
 │       │   └── layout.tsx
 │       ├── components/
-│       │   ├── KeyGate.tsx         # OpenRouter key input (localStorage only)
+│       │   ├── KeyStatusBanner.tsx # Server-side key pool health indicator
 │       │   ├── EvalLauncher.tsx    # Algorithm + target model selector
 │       │   ├── TraceViewer.tsx     # Live SSE trace renderer
 │       │   ├── RollbackTree.tsx    # Branch/rollback visualisation
@@ -49,7 +49,7 @@ ajar-ts/
 │   │   │   ├── stream.ts           # GET /evals/:id/stream (SSE)
 │   │   │   └── results.ts          # GET /results
 │   │   └── middleware/
-│   │       └── keyValidation.ts    # Validate OpenRouter key format
+│   │       └── keyValidation.ts    # Validate Gemini key format
 │   │
 │   └── engine/                     # Durable Object — eval session state
 │       ├── EvalSession.ts          # DO class: owns one running eval
@@ -64,7 +64,7 @@ ajar-ts/
 │       │   ├── ToolInterceptor.ts  # Route tool calls through policy
 │       │   └── policy.ts           # Benign vs sensitive classification
 │       ├── llm/
-│       │   └── openrouter.ts       # Unified LLM client (OpenRouter)
+│       │   └── gemini.ts           # Unified LLM client (Gemini / Ollama)
 │       └── scoring/
 │           └── scorer.ts           # Evaluate target responses
 │
@@ -106,8 +106,8 @@ Workers cannot hold state between requests, making them unsuitable for the Audit
 export const evalRuns = sqliteTable("eval_runs", {
   id:          text("id").primaryKey(),           // nanoid
   algorithm:   text("algorithm").notNull(),        // crescendo | actorAttack | xTeaming
-  targetModel: text("target_model").notNull(),     // openrouter model string
-  attackerModel: text("attacker_model").notNull(), // openrouter model string
+  targetModel: text("target_model").notNull(),     // model string e.g. "gemini/gemini-2.5-flash-lite"
+  attackerModel: text("attacker_model").notNull(), // model string e.g. "gemini/gemini-2.5-flash-lite"
   goal:        text("goal").notNull(),             // target harmful behavior description
   status:      text("status").notNull(),           // running | success | failed | abandoned
   asr:         real("asr"),                        // attack success rate (0-1)
@@ -148,12 +148,12 @@ export type Algorithm = "crescendo" | "actorAttack" | "xTeaming";
 export type EvalConfig = {
   id: string;
   algorithm: Algorithm;
-  targetModel: string;       // e.g. "anthropic/claude-3-haiku"
-  attackerModel: string;     // e.g. "meta-llama/llama-3.3-70b-instruct:free"
+  targetModel: string;       // e.g. "gemini/gemini-2.5-flash-lite"
+  attackerModel: string;     // e.g. "gemini/gemini-2.5-flash-lite"
   goal: string;              // what the attacker is trying to get the target to do
   maxTurns: number;          // default 20
   maxRollbacks: number;      // default 5
-  openrouterKey: string;     // user-supplied, never stored server-side
+  successThreshold: number;  // default 0.85
 };
 
 export type ConversationMessage = {
@@ -195,19 +195,19 @@ export type TraceEvent =
 
 ---
 
-## 6. LLM Client — OpenRouter
+## 6. LLM Client — Gemini / Ollama
 
-All LLM calls go through a single client. The user's key is passed per-request — never stored in D1, R2, or Worker KV.
+All LLM calls go through a single client. Keys are resolved server-side from the `GEMINI_API_KEYS` pool — never sent from the browser.
 
 ```typescript
-// workers/engine/llm/openrouter.ts
+// packages/lib/src/llm/index.ts
 
 export type LLMRequest = {
   model: string;
   messages: ConversationMessage[];
   temperature?: number;
   maxTokens?: number;
-  tools?: OpenRouterTool[];           // for tool-enabled target sessions
+  tools?: LLMTool[];           // for tool-enabled target sessions
 };
 
 export type LLMResponse = {
@@ -220,12 +220,11 @@ export async function callLLM(
   req: LLMRequest,
   apiKey: string
 ): Promise<LLMResponse> {
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://ajar.yourdomain.com",
     },
     body: JSON.stringify({
       model: req.model,
@@ -238,7 +237,7 @@ export async function callLLM(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`OpenRouter error ${res.status}: ${err}`);
+    throw new Error(`Gemini API error ${res.status}: ${err}`);
   }
 
   const data = await res.json();
@@ -255,14 +254,15 @@ export async function callLLM(
 }
 ```
 
-### Recommended free models on OpenRouter
+### Supported models
 
 | Role | Model | Notes |
 |---|---|---|
-| Attacker (Auditor) | `meta-llama/llama-3.3-70b-instruct:free` | Fast, capable |
-| Attacker (Auditor) | `deepseek/deepseek-r1:free` | Strong reasoning |
-| Target (victim) | Any model the researcher wants to probe | User configures |
-| Scorer | `meta-llama/llama-3.1-8b-instruct:free` | Cheap, sufficient |
+| Attacker (Auditor) | `gemini/gemini-2.5-flash-lite` | Fast, recommended default |
+| Attacker (Auditor) | `gemini/gemini-2.0-flash` | Higher capability |
+| Target (victim) | Any `gemini/` model | Researcher configures |
+| Target (victim) | `local/<ollama-model>` | Optional local Ollama |
+| Scorer | `gemini/gemini-2.5-flash-lite` | Cheap, sufficient |
 
 ---
 

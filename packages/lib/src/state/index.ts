@@ -29,13 +29,21 @@ export function scoreTrend(branch: Branch, window = 5): number[] {
 
 // ── Rollback decision (pure) ──────────────────────────────────────────────────
 
-export function shouldRollback(branch: Branch): boolean {
+export function shouldRollback(branch: Branch, successThreshold = 0.85): boolean {
   const trend = scoreTrend(branch, 3);
   if (trend.length < 3) return false;
+
+  const latest = trend[trend.length - 1]!;
+
+  // Fix #10: never roll back a branch that is at or above the success threshold.
+  // Without this guard, sequences like [0.88, 0.85, 0.84] — a successful attack
+  // that is merely cooling slightly — would trigger a rollback one turn before a win.
+  if (latest >= successThreshold) return false;
+
   // Require every step to be strictly lower than the previous (not just first vs last).
   // e.g. [0.3, 0.9, 0.4] would be a false positive with first-vs-last comparison.
   const declining = trend.every((s, i) => i === 0 || s < trend[i - 1]!);
-  const stubbornlyLow = latestScore(branch) < 0.2 && branch.messages.length > 8;
+  const stubbornlyLow = latest < 0.2 && branch.messages.length > 8;
   return declining || stubbornlyLow;
 }
 

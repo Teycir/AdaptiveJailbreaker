@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { evalsRouter } from "./routes/evals.ts";
 import { streamRouter } from "./routes/stream.ts";
 import { resultsRouter, internalRouter } from "./routes/results.ts";
+import { keyStatusRouter } from "./routes/keyStatus.ts";
 import type { Env } from "./types.ts";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -16,7 +17,7 @@ app.use(
   cors({
     origin: "*",
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "x-openrouter-key", "x-internal-secret"],
+    allowHeaders: ["Content-Type", "x-api-key", "x-openrouter-key", "x-internal-secret"],
   }),
 );
 
@@ -29,8 +30,7 @@ app.get("/health", (c) => c.json({ ok: true, ts: Date.now() }));
 app.route("/evals", evalsRouter);
 app.route("/evals", streamRouter);      // WebSocket: /evals/:id/ws
 app.route("/results", resultsRouter);
-// Fix #3: internalRouter handles POST /results directly, so the full path is
-// /internal/results — no path doubling, no fragile manual relay needed.
+app.route("/key-status", keyStatusRouter);
 app.route("/internal", internalRouter);
 
 // ── 404 fallback ───────────────────────────────────────────────────────────────

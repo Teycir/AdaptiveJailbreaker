@@ -17,7 +17,6 @@ fi
 MISSING=()
 [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && MISSING+=("CLOUDFLARE_ACCOUNT_ID")
 [ -z "$D1_DATABASE_ID" ]        && MISSING+=("D1_DATABASE_ID")
-[ -z "$OPENROUTER_API_KEY" ]    && MISSING+=("OPENROUTER_API_KEY")
 [ -z "$API_WORKER_URL" ]        && MISSING+=("API_WORKER_URL")
 [ -z "$NEXT_PUBLIC_API_URL" ]   && MISSING+=("NEXT_PUBLIC_API_URL")
 
@@ -35,6 +34,13 @@ if ! npx wrangler whoami &>/dev/null; then
   exit 1
 fi
 echo "✓ Wrangler authenticated"
+
+# Fix #16: run D1 migrations before deploying. Both files use CREATE TABLE IF NOT EXISTS
+# so re-running setup on an existing database is safe.
+echo "🗄️  Running D1 migrations..."
+npx wrangler d1 execute ajar-db --file=migrations/0001_initial.sql
+npx wrangler d1 execute ajar-db --file=migrations/0002_add_scorer_model.sql
+echo "✓ Migrations applied"
 
 # Run full deployment
 ./scripts/deploy.sh

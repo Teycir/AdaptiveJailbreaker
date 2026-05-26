@@ -30,17 +30,33 @@ pnpm install
 # Run development server
 pnpm dev
 
-# Deploy to Cloudflare
-cd workers/api && wrangler deploy
+# First-time deploy (runs migrations, deploys worker + pages, sets secrets)
+./scripts/setup.sh
+
+# Subsequent deploys (worker + pages only, no migration step)
+./scripts/deploy.sh
 ```
+
+## 🔑 API Keys
+
+Keys are configured server-side as a `GEMINI_API_KEYS` wrangler secret (comma-separated pool for rate-limit rotation). No key is ever exposed to the browser.
+
+```bash
+# Set your Gemini key(s) — comma-separate multiple for pool rotation
+wrangler secret put GEMINI_API_KEYS
+# paste: AIza...,AIza...
+```
+
+Recommended models: `gemini/gemini-2.5-flash-lite` (scorer, fast), `gemini/gemini-2.0-flash` (attacker).
 
 ## 📚 Documentation
 
 See [docs/Specs.md](docs/Specs.md) for the full technical specification.
 
-## 🔑 Features
+## ✨ Features
 
-- **Zero installation** - Visit URL, paste OpenRouter key, run
+- **Zero installation** - Visit URL, start an eval
+- **Gemini-powered** - Server-side key pool with 429-rotation
 - **Three core algorithms** - Crescendo, ActorAttack, X-Teaming
 - **Live streaming** - Real-time eval traces via SSE
 - **Cloudflare native** - Pages + Workers + KV + D1 (100% free tier)

@@ -112,6 +112,13 @@ describe("shouldRollback", () => {
     for (const s of [0.8, 0.6, 0.3]) b = recordScore(b, s);
     expect(shouldRollback(b)).toBe(true);
   });
+
+  it("returns false when latest score is at or above successThreshold even if declining", () => {
+    let b = makeBranch(0, null);
+    // All three scores are above the 0.85 threshold — latest is 0.86, so guard fires
+    for (const s of [0.92, 0.89, 0.86]) b = recordScore(b, s);
+    expect(shouldRollback(b, 0.85)).toBe(false);
+  });
 });
 
 describe("getCurrentBranch", () => {

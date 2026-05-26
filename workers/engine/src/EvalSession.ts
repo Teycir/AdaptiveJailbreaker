@@ -24,6 +24,11 @@ export class EvalSession implements DurableObject {
   constructor(state: DurableObjectState, env: Env) {
     this.storage = state.storage;
     this.env = env;
+    // Fix #12: restore the running flag from durable storage so a cold-started DO
+    // rejects duplicate POST /start requests even after an eviction mid-eval.
+    state.blockConcurrencyWhile(async () => {
+      this.running = (await this.storage.get<boolean>("running")) ?? false;
+    });
   }
 
   // ── Request dispatch ──────────────────────────────────────────────────────
@@ -81,6 +86,9 @@ export class EvalSession implements DurableObject {
     }
 
     const body: { config: EvalConfig; apiKey: string } = await request.json();
+    // Fix #12: persist before firing so a concurrent request that arrives before
+    // runEval sets this.running will also be rejected.
+    await this.storage.put("running", true);
     this.running = true;
 
     this.runEval(body.config, body.apiKey).catch((err: unknown) => {
@@ -103,7 +111,10 @@ export class EvalSession implements DurableObject {
       this.broadcast({ type: "status_change", status: "failed", message: String(err) });
       return;
     } finally {
+      // Fix #12: clear the persisted flag so a completed (or crashed) eval session
+      // does not permanently block a re-run in the same DO instance.
       this.running = false;
+      await this.storage.delete("running");
     }
 
     await this.storage.put("finalState", JSON.stringify(this.evalState));

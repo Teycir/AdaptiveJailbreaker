@@ -104,10 +104,14 @@ export class ActorAttackAlgorithm implements IAttackAlgorithm {
   }
 
   async revise(state: EvalState, reason: string, apiKey: string): Promise<Result<Message>> {
-    // Clear persona so the next branch starts with a fresh character.
+    // Fix #9: reset persona first, then rebuild it so nextMessage() has coherent
+    // character/scenario context on the new branch. The old code cleared and never
+    // refilled, causing buildContinuePrompt to receive empty strings every turn.
     this.character = "";
     this.scenario = "";
-    const llmResult = await callLLM(
+
+    // 1. Generate the new opening message
+    const openingResult = await callLLM(
       {
         model: state.config.attackerModel,
         messages: [{ role: "user", content: buildRevisePrompt(state.config.goal, reason) }],
@@ -116,7 +120,29 @@ export class ActorAttackAlgorithm implements IAttackAlgorithm {
       },
       apiKey,
     );
-    if (!llmResult.ok) return llmResult;
-    return ok({ role: "user", content: llmResult.value.content });
+    if (!openingResult.ok) return openingResult;
+
+    // 2. Build a fresh persona so subsequent nextMessage calls stay coherent.
+    // Non-fatal if this fails — we degrade to hint-free continuation rather
+    // than aborting the whole eval.
+    const personaResult = await callLLM(
+      {
+        model: state.config.attackerModel,
+        messages: [{ role: "user", content: buildPersonaPrompt(state.config.goal) }],
+        temperature: 0.9,
+        maxTokens: 1024,
+        jsonMode: true,
+      },
+      apiKey,
+    );
+    if (personaResult.ok) {
+      const parsed = parsePersona(personaResult.value.content);
+      if (parsed.ok) {
+        this.character = parsed.value.character;
+        this.scenario = parsed.value.scenario;
+      }
+    }
+
+    return ok({ role: "user", content: openingResult.value.content });
   }
 }

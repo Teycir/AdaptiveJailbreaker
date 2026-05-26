@@ -109,7 +109,7 @@ export class AuditorAgent {
         apiKey,
         this.config.scorerModel,
       );
-      const score = scoreResult.ok ? scoreResult.value : 0;
+      const score = scoreResult.ok ? scoreResult.value : 0.5; // neutral fallback — 0 can trigger premature rollback
 
       state = addMessageToState(state, { role: "assistant", content: targetResponse.content });
       state = addScoreToState(state, score);
@@ -137,7 +137,8 @@ export class AuditorAgent {
       const currentBranch = updatedBranch.value;
 
       if (
-        shouldRollback(currentBranch) &&
+        // Fix #10: pass successThreshold so shouldRollback doesn't fire on winning branches
+        shouldRollback(currentBranch, this.config.successThreshold) &&
         state.totalRollbacks < this.config.maxRollbacks
       ) {
         const rollbackResult = rollbackState(state);
@@ -148,11 +149,16 @@ export class AuditorAgent {
 
           await this.emit({ type: "rollback", fromBranch, toBranch, reason: "score declining or stubborn refusal" });
 
+          // Fix #11: treat a failed revise() as fatal rather than silently continuing
+          // with an empty context, which would corrupt the target model's message history.
           const revisionResult = await this.algorithm.revise(state, "previous branch stalled", apiKey);
-          if (revisionResult.ok) {
-            state = addMessageToState(state, revisionResult.value);
-            await this.emit({ type: "attacker_msg", content: revisionResult.value.content, branchId: toBranch });
+          if (!revisionResult.ok) {
+            state = setStatus(state, "failed");
+            await this.emit({ type: "status_change", status: "failed", message: revisionResult.error.message });
+            break;
           }
+          state = addMessageToState(state, revisionResult.value);
+          await this.emit({ type: "attacker_msg", content: revisionResult.value.content, branchId: toBranch });
           continue;
         }
       }

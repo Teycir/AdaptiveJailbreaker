@@ -67,18 +67,28 @@ export class CrescendoAlgorithm implements IAttackAlgorithm {
   // ── Shared plan builder ─────────────────────────────────────────────────────
 
   private async buildPlan(state: EvalState, apiKey: string): Promise<Result<string[]>> {
-    const llmResult = await callLLM(
-      {
-        model: state.config.attackerModel,
-        messages: [{ role: "user", content: buildPlanPrompt(state.config.goal) }],
-        temperature: 0.7,
-        maxTokens: 1024,
-        jsonMode: true,
-      },
-      apiKey,
-    );
-    if (!llmResult.ok) return llmResult;
-    return parsePlan(llmResult.value.content);
+    // Fix #14: retry once with a stricter prompt before giving up. Small free-tier
+    // models frequently return malformed JSON on the first attempt. On second failure,
+    // degrade to a single-item plan (the raw goal text) so the eval continues rather
+    // than failing immediately with a parse error.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const llmResult = await callLLM(
+        {
+          model: state.config.attackerModel,
+          messages: [{ role: "user", content: buildPlanPrompt(state.config.goal) }],
+          temperature: attempt === 0 ? 0.7 : 0.3,   // lower temp on retry = stricter output
+          maxTokens: 1024,
+          jsonMode: true,
+        },
+        apiKey,
+      );
+      if (!llmResult.ok) return llmResult;          // network/auth error — don't retry
+      const parsed = parsePlan(llmResult.value.content);
+      if (parsed.ok) return parsed;
+      // parse failed — loop for one more attempt
+    }
+    // Both attempts failed: degrade gracefully to a single-step plan
+    return ok([state.config.goal]);
   }
 
   // ── IAttackAlgorithm ────────────────────────────────────────────────────────

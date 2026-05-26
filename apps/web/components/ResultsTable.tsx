@@ -19,10 +19,7 @@ interface EvalRow {
   created_at: number;
 }
 
-interface Props {
-  algorithm?: string;
-  status?: EvalStatus;
-}
+interface Props { algorithm?: string; status?: EvalStatus }
 
 export function ResultsTable({ algorithm, status }: Props) {
   const [rows, setRows] = useState<EvalRow[]>([]);
@@ -34,49 +31,52 @@ export function ResultsTable({ algorithm, status }: Props) {
     const params = new URLSearchParams();
     if (algorithm) params.set("algorithm", algorithm);
     if (status)    params.set("status", status);
-
     fetch(`${API}/results?${params}`)
-      .then((r) => r.json() as Promise<EvalRow[]>)
-      .then((data) => { setRows(data); setLoading(false); })
-      .catch((err) => { setError(String(err)); setLoading(false); });
+      .then(r => r.json() as Promise<EvalRow[]>)
+      .then(data => { setRows(data); setLoading(false); })
+      .catch(err => { setError(String(err)); setLoading(false); });
   }, [algorithm, status]);
 
-  if (loading) return <p className="text-zinc-500 text-sm">Loading…</p>;
-  if (error)   return <p className="text-red-400 text-sm">{error}</p>;
-  if (rows.length === 0) return <p className="text-zinc-500 text-sm">No results yet.</p>;
+  if (loading) return (
+    <div style={{ padding: "2rem 1.5rem", color: "rgba(255,255,255,0.25)", fontSize: "0.8rem" }}>Loading…</div>
+  );
+  if (error) return (
+    <div style={{ padding: "2rem 1.5rem", color: "#f87171", fontSize: "0.8rem" }}>{error}</div>
+  );
+  if (rows.length === 0) return (
+    <div style={{ padding: "3rem 1.5rem", color: "rgba(255,255,255,0.2)", fontSize: "0.82rem", textAlign: "center" }}>
+      No results yet. <a href="/" style={{ color: "var(--neon-red)", textDecoration: "none" }}>Launch your first eval →</a>
+    </div>
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+    <div style={{ overflowX: "auto" }}>
+      <table className="results-table">
         <thead>
-          <tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
-            <Th>ID</Th>
-            <Th>Algorithm</Th>
-            <Th>Target</Th>
-            <Th>Goal</Th>
-            <Th>Status</Th>
-            <Th>ASR</Th>
-            <Th>Turns</Th>
-            <Th>Rollbacks</Th>
-            <Th>Time</Th>
+          <tr>
+            <th>ID</th>
+            <th>Algorithm</th>
+            <th style={{ width: 160 }}>Target</th>
+            <th style={{ width: 220 }}>Goal</th>
+            <th>Status</th>
+            <th>ASR</th>
+            <th>Turns</th>
+            <th>RBs</th>
+            <th>Time</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.id}
-              onClick={() => router.push(`/eval/${row.id}`)}
-              className="border-b border-zinc-900 hover:bg-zinc-900/60 cursor-pointer transition-colors"
-            >
-              <Td>{row.id.slice(0, 8)}…</Td>
-              <Td>{row.algorithm}</Td>
-              <Td className="max-w-[160px] truncate">{row.target_model}</Td>
-              <Td className="max-w-[200px] truncate">{row.goal}</Td>
-              <Td><StatusCell status={row.status} /></Td>
-              <Td><AsrCell asr={row.asr} /></Td>
-              <Td>{row.turns ?? "—"}</Td>
-              <Td>{row.rollbacks ?? "—"}</Td>
-              <Td className="text-zinc-600">{fmtTime(row.created_at)}</Td>
+          {rows.map(row => (
+            <tr key={row.id} onClick={() => router.push(`/eval/${row.id}`)}>
+              <td style={{ fontFamily: "monospace", color: "rgba(255,26,26,0.6)", width: 90 }}>{row.id.slice(0, 8)}…</td>
+              <td style={{ width: 110 }}>{row.algorithm}</td>
+              <td style={{ maxWidth: 160 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.target_model}</span></td>
+              <td style={{ maxWidth: 220 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.goal}</span></td>
+              <td><StatusChip status={row.status} /></td>
+              <td><AsrCell asr={row.asr} /></td>
+              <td style={{ color: "rgba(255,255,255,0.5)" }}>{row.turns ?? "—"}</td>
+              <td style={{ color: "rgba(255,255,255,0.5)" }}>{row.rollbacks ?? "—"}</td>
+              <td style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.72rem" }}>{fmtTime(row.created_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -85,36 +85,18 @@ export function ResultsTable({ algorithm, status }: Props) {
   );
 }
 
-// ── Cell helpers ──────────────────────────────────────────────────────────────
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="py-2 pr-4 font-medium">{children}</th>;
-}
-
-function Td({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <td className={`py-2 pr-4 text-zinc-300 ${className}`}>{children}</td>;
-}
-
-function StatusCell({ status }: { status: EvalStatus }) {
-  const map: Record<EvalStatus, string> = {
-    running:   "text-blue-400",
-    success:   "text-green-400",
-    failed:    "text-red-400",
-    abandoned: "text-orange-400",
-  };
-  return <span className={`font-mono ${map[status] ?? "text-zinc-400"}`}>{status}</span>;
+function StatusChip({ status }: { status: EvalStatus }) {
+  const cls = { running: "chip chip-running", success: "chip chip-success", failed: "chip chip-failed", abandoned: "chip chip-abandoned" }[status] ?? "chip";
+  return <span className={cls}>{status}</span>;
 }
 
 function AsrCell({ asr }: { asr: number | null }) {
-  if (asr === null) return <span className="text-zinc-600">—</span>;
+  if (asr === null) return <span style={{ color: "rgba(255,255,255,0.2)" }}>—</span>;
   const pct = (asr * 100).toFixed(0) + "%";
-  const color = asr >= 0.75 ? "text-red-400" : asr > 0 ? "text-yellow-400" : "text-zinc-500";
-  return <span className={`font-mono ${color}`}>{pct}</span>;
+  const color = asr >= 0.75 ? "#f87171" : asr > 0 ? "#eab308" : "rgba(255,255,255,0.3)";
+  return <span style={{ fontFamily: "monospace", color, fontWeight: 600 }}>{pct}</span>;
 }
 
 function fmtTime(ms: number) {
-  return new Date(ms).toLocaleString(undefined, {
-    month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+  return new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }

@@ -6,5 +6,6 @@ export interface Env {
   SESSIONS: KVNamespace;
   API_INTERNAL_SECRET: string;
   API_WORKER_URL: string;
-  OPENROUTER_KEY: string;
+  /** Comma-separated Gemini API key pool — set via: wrangler secret put GEMINI_API_KEYS */
+  GEMINI_API_KEYS: string;
 }

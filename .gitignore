@@ -10,6 +10,7 @@ dist/
 .next/
 .wrangler/
 .turbo/
+apps/web/out/
 
 # Environment
 .env
@@ -25,5 +26,6 @@ Thumbs.db
 
 # Secrets backup
 .env.backup
-apps/web/outworkers/api/tests/.env.test
+
+# Test secrets
 workers/api/tests/.env.test

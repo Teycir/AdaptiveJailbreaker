@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Adaptive Jailbreaker — Automated AI Red-Teaming",
-  description: "Automated red-teaming research tool. Authorized security research only.",
-  icons: {
-    icon: '/favicon.svg',
-  },
+  title: "AJAR — Adaptive Jailbreak Auditor & Red-teamer",
+  description: "Automated AI red-teaming research tool. Authorized security research only.",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,11 +14,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-dark-bg text-zinc-100 font-mono antialiased">
+      <body className="min-h-screen antialiased" style={{ background: "var(--dark-bg)", color: "var(--dark-text)", fontFamily: "'JetBrains Mono', 'Courier New', monospace" }}>
+        <div className="scan-line" aria-hidden="true" />
         {children}
       </body>
     </html>

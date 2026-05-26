@@ -75,25 +75,34 @@ export class XTeamingAlgorithm implements IAttackAlgorithm {
   private strategies: string[] = [];
 
   async initialize(state: EvalState, apiKey: string): Promise<Result<Message>> {
-    const llmResult = await callLLM(
-      {
-        model: state.config.attackerModel,
-        messages: [{ role: "user", content: buildStrategyPrompt(state.config.goal) }],
-        temperature: 0.9,
-        maxTokens: 1024,
-        jsonMode: true,
-      },
-      apiKey,
-    );
-    if (!llmResult.ok) return llmResult;
+    // Fix #14: retry once on JSON parse failure before degrading. Small free-tier
+    // models frequently ignore JSON instructions on the first attempt.
+    let lastParseRaw = "";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const llmResult = await callLLM(
+        {
+          model: state.config.attackerModel,
+          messages: [{ role: "user", content: buildStrategyPrompt(state.config.goal) }],
+          temperature: attempt === 0 ? 0.9 : 0.4,
+          maxTokens: 1024,
+          jsonMode: true,
+        },
+        apiKey,
+      );
+      if (!llmResult.ok) return llmResult;
 
-    const stratResult = parseStrategy(llmResult.value.content);
-    if (!stratResult.ok) return stratResult;
-
-    this.strategies = stratResult.value.strategies;
-    this.selectedStrategy = this.strategies[stratResult.value.selected] ?? "";
-
-    return ok({ role: "user", content: stratResult.value.opening });
+      const stratResult = parseStrategy(llmResult.value.content);
+      if (stratResult.ok) {
+        this.strategies = stratResult.value.strategies;
+        this.selectedStrategy = this.strategies[stratResult.value.selected] ?? "";
+        return ok({ role: "user", content: stratResult.value.opening });
+      }
+      lastParseRaw = llmResult.value.content;
+    }
+    // Both attempts failed: degrade — use the raw text as the opening and pick no strategy
+    this.strategies = [];
+    this.selectedStrategy = "";
+    return ok({ role: "user", content: lastParseRaw || state.config.goal });
   }
 
   async nextMessage(state: EvalState, apiKey: string): Promise<Result<Message>> {

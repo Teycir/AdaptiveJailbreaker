@@ -166,12 +166,12 @@ describe("callLLM — Ollama routing", () => {
   });
 });
 
-// ── callLLM — Ollama offline (getLocalConfig returns null) ────────────────────
+// ── callLLM — Ollama offline ──────────────────────────────────────────────────
 
 describe("callLLM — Ollama unavailable", () => {
   it("returns llm_error with helpful message when no local provider is detected", async () => {
-    const { getLocalConfig } = await import("../../src/llm/local.ts");
-    vi.mocked(getLocalConfig).mockResolvedValueOnce(null);
+    // Simulate Ollama not running — fetch throws a connection-refused error
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:11434 — is ollama serve running?")));
 
     const r = await callLLM(OLLAMA_REQ, "ollama");
     expect(r.ok).toBe(false);

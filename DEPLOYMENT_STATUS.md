@@ -27,15 +27,15 @@
 - ⚠️ **Test 11:** Eval lifecycle (fails with totalTurns=0)
 - ⚠️ **Test 9:** SSE stream data (skipped - no events within timeout)
 
-**Root Cause:** OpenRouter API keys have $0 balance. The eval runner correctly:
+**Root Cause:** Gemini API keys have no remaining quota. The eval runner correctly:
 1. Accepts the eval request
 2. Stores it in KV
 3. Launches background execution
-4. Attempts to call OpenRouter API
-5. Receives "Insufficient credits" error
+4. Attempts to call the Gemini API
+5. Receives a quota-exceeded error
 6. Marks eval as failed
 
-This is **expected behavior** - the API is working correctly, but LLM calls require credits.
+This is **expected behavior** — the API is working correctly, but LLM calls require a valid key with available quota.
 
 ## 🔧 What Was Fixed
 
@@ -81,23 +81,21 @@ On completion → persistResult(D1)
 
 ## 🎯 To Enable Full Testing
 
-Add credits to any OpenRouter key, then run:
+Configure Gemini API keys via wrangler secret, then run:
 ```bash
 ./workers/api/tests/integration.sh
 ```
 
-All 55 tests should pass with a funded key.
+All 55 tests should pass with valid keys that have available quota.
 
-## 📝 API Keys Available
+## 📝 API Keys
 
-12 OpenRouter keys configured in `integration.sh`:
-- All keys are valid
-- All keys have $0 balance
-- Any key can be funded at https://openrouter.ai/settings/credits
+Keys are configured server-side as a `GEMINI_API_KEYS` wrangler secret (comma-separated pool).  
+Run `wrangler secret put GEMINI_API_KEYS` to set them.
 
 ## 🚀 Next Steps
 
-1. **Fund one OpenRouter key** to verify end-to-end eval execution
-2. **Frontend integration** - connect Next.js app to deployed API
-3. **Monitoring** - set up alerts for failed evals
-4. **Rate limiting** - add per-key rate limits if needed
+1. **Add Gemini API keys** with available quota to verify end-to-end eval execution
+2. **Frontend integration** — connect Next.js app to deployed API
+3. **Monitoring** — set up alerts for failed evals
+4. **Rate limiting** — add per-key rate limits if needed

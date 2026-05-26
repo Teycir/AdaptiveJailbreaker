@@ -21,13 +21,14 @@ echo "📦 Building frontend..."
 cd apps/web
 source $HOME/.nvm/nvm.sh
 nvm use 22.22.3
-NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" pnpm build
+NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" npx pnpm build
 cd ../..
 
 # Deploy to Cloudflare Pages
 echo "🚀 Deploying to Cloudflare Pages..."
 npx wrangler pages deploy apps/web/out \
   --project-name=adaptivejailbreaker \
+  --branch=main \
   --commit-dirty=true
 
 echo ""
