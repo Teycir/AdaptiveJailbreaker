@@ -63,12 +63,8 @@ See [docs/Specs.md](docs/Specs.md) for the full technical specification.
 
 ## 📄 License
 
-Business Source License 1.1 (BSL)
+MIT
 
-- **License Date:** 2026
-- **Change Date:** Four years from the license date
-
-See [LICENSE](LICENSE) for full details.
 
 ## 🙏 Acknowledgments
 
