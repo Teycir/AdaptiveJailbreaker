@@ -150,4 +150,4 @@ MIT
 
 This project is inspired by the original [AJAR research project](https://github.com/douyipu/ajar) by Dou et al.
 
-**Research Paper:** [AJAR: Adaptive Jailbreak via Adversarial Reasoning](https://arxiv.org/abs/2410.21218) (2024)
+**Research Paper:** [AJAR: Adaptive Jailbreak Architecture for Red-teaming](https://arxiv.org/abs/2601.10971) (2026)
