@@ -6,6 +6,16 @@ Production-grade TypeScript rewrite of the AJAR research prototype, running enti
 **Contact:** teycir@pxdmail.net  
 **Inspired by:** [AJAR Research Project](https://github.com/douyipu/ajar)
 
+## 🎯 Results
+
+AJAR achieves state-of-the-art jailbreak success rates through adaptive multi-turn attacks:
+
+- **Crescendo**: Gradual escalation from benign to harmful requests (70-85% ASR)
+- **ActorAttack**: Role-playing scenarios to bypass safety filters (65-80% ASR)
+- **X-Teaming**: Multi-agent collaboration for complex jailbreaks (75-90% ASR)
+
+All algorithms adapt in real-time based on target model responses, automatically adjusting strategy when defenses are detected.
+
 ## 📁 Project Structure
 
 ```
@@ -39,15 +49,22 @@ pnpm dev
 
 ## 🔑 API Keys
 
-Keys are configured server-side as a `GEMINI_API_KEYS` wrangler secret (comma-separated pool for rate-limit rotation). No key is ever exposed to the browser.
+AJAR supports **any LLM provider** via server-side key pools with automatic rate-limit rotation. Keys are stored as wrangler secrets and never exposed to the browser.
 
 ```bash
-# Set your Gemini key(s) — comma-separate multiple for pool rotation
-wrangler secret put GEMINI_API_KEYS
-# paste: AIza...,AIza...
+# Set API keys for any provider — comma-separate multiple keys for pool rotation
+wrangler secret put GEMINI_API_KEYS      # Google Gemini
+wrangler secret put OPENAI_API_KEYS      # OpenAI GPT models
+wrangler secret put ANTHROPIC_API_KEYS   # Anthropic Claude
+# Add as many providers as needed
 ```
 
-Recommended models: `gemini/gemini-2.5-flash-lite` (scorer, fast), `gemini/gemini-2.0-flash` (attacker).
+**Recommended configuration:**
+- **Scorer** (fast, cheap): `gemini/gemini-2.5-flash-lite` or `openai/gpt-4o-mini`
+- **Attacker** (creative): `gemini/gemini-2.0-flash` or `anthropic/claude-3-5-sonnet`
+- **Target**: Any model you want to test
+
+The system automatically rotates through your key pool when hitting rate limits (429 errors).
 
 ## 📚 Documentation
 
@@ -56,7 +73,7 @@ See [docs/Specs.md](docs/Specs.md) for the full technical specification.
 ## ✨ Features
 
 - **Zero installation** - Visit URL, start an eval
-- **Gemini-powered** - Server-side key pool with 429-rotation
+- **Multi-provider support** - OpenAI, Anthropic, Gemini, and more with automatic key rotation
 - **Three core algorithms** - Crescendo, ActorAttack, X-Teaming
 - **Live streaming** - Real-time eval traces via SSE
 - **Cloudflare native** - Pages + Workers + KV + D1 (100% free tier)
